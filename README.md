@@ -20,6 +20,46 @@ This is based on the [plugin](https://github.com/AzureAD/active-directory-b2c-wo
 + On your Admin dashboard, a new options page called "B2C Authentication Settings" should appear under the Settings button. 
 + Click on that page and fill in the prompts for tenant, clientID, etc.
 
+## Custom Actions and Filters
+
+### Updating Custom Fields
+As suggested by peterspliid in the Microsoft [repo](https://github.com/AzureAD/active-directory-b2c-wordpress-plugin-openidconnect/pull/20), administraters can now update custom fields upon user creation or profile editing. 
+```
+function custom_ms_fields($userID, $payload) {
+    if (isset($payload['jobTitle']))
+        update_user_meta($userID, 'job_title', $payload['jobTitle']);
+}
+add_action('b2c_new_userdata', 'custom_ms_fields', 10, 2);
+add_action('b2c_update_userdata', 'custom_ms_fields', 10, 2);
+```
+### Displaying Custom Fields
+You may want to display B2C specific fields or custom fields on the user profile. By default the B2C Object ID for the user will be displayed but this can be controlled through the filter.
+```
+function b2c_custom_user_fields( $fields ) {
+	$fields["job_title"] = array(
+    				"label" => "Job Title",
+					"meta" 	=> "job_title",
+				);
+    return $fields;
+}
+add_filter( 'b2c_update_user_fields_filter', 'b2c_custom_user_fields', 10, 1 );
+add_filter( 'b2c_user_fields_filter', 'b2c_custom_user_fields', 10, 1 );
+```
+### Changing the Post Login Redirect Behavior
+By default this plugin will redirect to the homepage after successful login. You may want to change this behavior. Below is an example of redirecting to the WooCommerce shopping cart if it has items in it or to the /my-account page if the cart is empty.
+```
+function custom_login_redirect() {
+    // Redirect to checkout if woocommerce is activated and items in cart
+	if (class_exists('woocommerce') && WC()->cart->get_cart_contents_count() > 0) {
+		wp_safe_redirect(wc_get_checkout_url());
+		exit;
+	}
+	
+	// Redirect to My Account
+	wp_safe_redirect(site_url() . '/my-account');
+}
+add_action('b2c_post_login', 'custom_login_redirect', 10, 2);
+```
 ## More information
 B2C is an identity management service for both web applications and mobile applications. Developers can rely on B2C for consumer sign up and sign in, instead of relying on their own code. Consumers can sign in using brand new credentials or existing accounts on various social platforms (Facebook, for example). 
 
