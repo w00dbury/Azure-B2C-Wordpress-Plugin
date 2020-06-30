@@ -23,7 +23,7 @@ This is based on the [plugin](https://github.com/AzureAD/active-directory-b2c-wo
 ## Custom Actions and Filters
 
 ### Updating Custom Fields
-As suggested by peterspliid in the Microsoft [repo](https://github.com/AzureAD/active-directory-b2c-wordpress-plugin-openidconnect/pull/20), administraters can now update custom fields upon user creation or profile editing. 
+As suggested by [@peterspliid](https://github.com/peterspliid) in the Microsoft [repo](https://github.com/AzureAD/active-directory-b2c-wordpress-plugin-openidconnect/pull/20), administraters can now update custom fields upon user creation or profile editing. 
 ```
 function custom_ms_fields($userID, $payload) {
     if (isset($payload['jobTitle']))
