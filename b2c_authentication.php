@@ -120,11 +120,23 @@ function b2c_verify_token() {
 				$verified = $token_checker->authenticate();
 				if ($verified == false) wp_die('Token validation error');
 			}
-			
-			// Use the email claim to fetch the user object from the WP database
-			$email = $token_checker->get_claim('emails');
-			$email = $email[0];
-			$user = WP_User::get_data_by('email', $email);
+
+			// First find the user by the B2C object ID
+			$object_id = $token_checker->get_claim('sub');
+			$users = get_users(array('meta_key' => 'b2c_object_id', 'meta_value' => $object_id));
+			if (is_array($users) && count($users) == 0) {
+				// User not found, try to find them by email
+				$email = $token_checker->get_claim('emails');
+				$email = $email[0];
+				$user = WP_User::get_data_by('email', $email);
+			} else if (is_array($users) && count($users) == 1) {
+				// User found
+				$user = $users[0];
+			} else if (is_array($users) && count($users) > 1) {
+				// Duplicate users found log error and exit
+				error_log('Duplicate users found for b2c_object_id ' . $object_id);
+				exit;
+			}
 			
 			// Get the userID for the user
 			if ($user == false) { // User doesn't exist yet, create new userID
@@ -144,7 +156,8 @@ function b2c_verify_token() {
 						'last_name' => $last_name
 						);
 
-				$userID = wp_insert_user( $our_userdata ); 
+				$userID = wp_insert_user( $our_userdata );
+				update_user_meta($userID, 'b2c_object_id', sanitize_text_field($object_id));
 			} else if ($policy == B2C_Settings::$edit_profile_policy) { // Update the existing user w/ new attritubtes
 				
 				$name = $token_checker->get_claim('name');
@@ -159,6 +172,7 @@ function b2c_verify_token() {
 										);
 													
 				$userID = wp_update_user( $our_userdata );
+				update_user_meta($userID, 'b2c_object_id', sanitize_text_field($object_id));
 			} else {
 				$userID = $user->ID;
 			}
