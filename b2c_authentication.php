@@ -4,7 +4,7 @@
  * Plugin Name: Microsoft Azure Active Directory B2C Authentication
  * Plugin URI: https://github.com/AzureAD/active-directory-b2c-wordpress-plugin-openidconnect
  * Description: A plugin that allows users to log in using B2C policies
- * Version: 1.0
+ * Version: 1.1
  * Author: Microsoft
  * Author URI: https://azure.microsoft.com/en-us/documentation/services/active-directory-b2c/
  * License: MIT License (https://raw.githubusercontent.com/AzureAD/active-directory-b2c-wordpress-plugin-openidconnect/master/LICENSE)
@@ -70,9 +70,30 @@ function b2c_logout() {
 function b2c_verify_token() {
 	try {
 		if (isset($_POST['error'])) {
-			echo 'Unable to log in';
-			echo '<br/>error:' . $_POST['error'];
-			echo '<br/>error_description:' . $_POST['error_description'];
+			// If user requests the Password Reset flow from a Sign-in/Sign-up flow, the following is returned:
+			//   Error: access_denied
+			//   Description: AADB2C90118: The user has forgotten their password.
+			if (preg_match('/.*AADB2C90118.*/i', $_POST['error_description'])) {
+				// user forgot password so redirect to the password reset flow
+				b2c_password_reset();
+				exit;
+			}
+
+			// If user cancels the Sign-up portion of the Sign-in/Sign-up flow or
+			// if user cancels the Profile Edit flow, the following is returned:
+			//   Error: access_denied
+			//   Description: AADB2C90091: The user has cancelled entering self-asserted information.
+			if (preg_match('/.*AADB2C90091.*/i', $_POST['error_description'])) {
+				// user cancelled profile editing or cancelled signing up
+				// so redirect to the home page instead of showing an error
+				wp_safe_redirect(site_url() . '/');
+				exit;
+			}
+
+			echo 'Authentication error on ' . get_bloginfo('name') . '.';
+			echo '<br>Error: ' . $_POST['error'];
+			echo '<br>Description: ' . $_POST['error_description'];
+			echo '<br><br><a href="' . site_url() . '">Go to ' . site_url() . '</a>';
 			exit;
 		}
 
@@ -126,6 +147,7 @@ function b2c_verify_token() {
 				$userID = wp_insert_user( $our_userdata ); 
 			} else if ($policy == B2C_Settings::$edit_profile_policy) { // Update the existing user w/ new attritubtes
 				
+				$name = $token_checker->get_claim('name');
 				$first_name = $token_checker->get_claim('given_name');
 				$last_name = $token_checker->get_claim('family_name');
 				
@@ -191,11 +213,34 @@ function b2c_edit_profile() {
 	}
 }
 
+/**
+ * Redirects to B2C on a password reset request.
+ */
+function b2c_password_reset() {
+	try {
+		$b2c_endpoint_handler = new B2C_Endpoint_Handler(B2C_Settings::$password_reset_policy);
+		$authorization_endpoint = $b2c_endpoint_handler->get_authorization_endpoint().'&state=password_reset';
+		wp_redirect($authorization_endpoint);
+	}
+	catch (Exception $e) {
+		echo $e->getMessage();
+	}
+	exit;
+}
+
 /** 
  * Hooks onto the WP login action, so when user logs in on WordPress, user is redirected
  * to B2C's authorization endpoint. 
  */
 add_action('wp_authenticate', 'b2c_login');
+
+/** 
+ * Hooks onto the WP lost password action, so user is redirected
+ * to B2C's password reset endpoint. 
+ * 
+ * example.com/wp-login.php?action=lostpassword
+ */
+add_action('login_form_lostpassword', 'b2c_password_reset');
 
 /**
  * Hooks onto the WP page load action, so when user request to edit their profile, 
@@ -215,4 +260,3 @@ add_action('wp_loaded', 'b2c_verify_token');
  * they are redirected to B2C's logout endpoint.
  */
 add_action('wp_logout', 'b2c_logout');
-
