@@ -1,6 +1,7 @@
 <?php 
 
 use \Firebase\JWT\JWT;
+use \phpseclib\Crypt\RSA;
 
 /** 
  * A class to verify an id_token, following the implicit flow
@@ -70,7 +71,7 @@ class B2C_Token_Checker {
 			$n = $this->convert_base64url_to_base64($n);
 
 			// Convert RSA(e,n) format to PEM format
-			$rsa = new Crypt_RSA();
+			$rsa = new RSA();
 			$rsa->setPublicKey('<RSAKeyValue>
 				<Modulus>' . $n . '</Modulus>
 				<Exponent>' . $e . '</Exponent>
