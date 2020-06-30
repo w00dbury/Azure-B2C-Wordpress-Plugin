@@ -10,7 +10,7 @@
  * License: MIT License (https://raw.githubusercontent.com/AzureAD/active-directory-b2c-wordpress-plugin-openidconnect/master/LICENSE)
  */
 
- 
+
 //*****************************************************************************************
 
 
@@ -36,13 +36,13 @@ $b2c_settings = new B2C_Settings();
 /**
  * Redirects to B2C on a user login request.
  */
-function b2c_login() {
+function b2c_login()
+{
 	try {
 		$b2c_endpoint_handler = new B2C_Endpoint_Handler(B2C_Settings::$generic_policy);
-		$authorization_endpoint = $b2c_endpoint_handler->get_authorization_endpoint()."&state=generic";
+		$authorization_endpoint = $b2c_endpoint_handler->get_authorization_endpoint() . "&state=generic";
 		wp_redirect($authorization_endpoint);
-	}
-	catch (Exception $e) {
+	} catch (Exception $e) {
 		echo $e->getMessage();
 	}
 	exit;
@@ -51,13 +51,13 @@ function b2c_login() {
 /** 
  * Redirects to B2C on user logout.
  */
-function b2c_logout() {
+function b2c_logout()
+{
 	try {
 		$signout_endpoint_handler = new B2C_Endpoint_Handler(B2C_Settings::$generic_policy);
 		$signout_uri = $signout_endpoint_handler->get_end_session_endpoint();
 		wp_redirect($signout_uri);
-	}
-	catch (Exception $e) {
+	} catch (Exception $e) {
 		echo $e->getMessage();
 	}
 	exit;
@@ -67,7 +67,8 @@ function b2c_logout() {
  * Verifies the id_token that is POSTed back to the web app from the 
  * B2C authorization endpoint. 
  */
-function b2c_verify_token() {
+function b2c_verify_token()
+{
 	try {
 		if (isset($_POST['error'])) {
 			// If user requests the Password Reset flow from a Sign-in/Sign-up flow, the following is returned:
@@ -97,10 +98,10 @@ function b2c_verify_token() {
 			exit;
 		}
 
-		if (isset($_POST[B2C_RESPONSE_MODE])) {	
+		if (isset($_POST[B2C_RESPONSE_MODE])) {
 			// Check which authorization policy was used
 			switch ($_POST['state']) {
-				case 'generic': 
+				case 'generic':
 					$policy = B2C_Settings::$generic_policy;
 					break;
 				case 'admin':
@@ -112,8 +113,8 @@ function b2c_verify_token() {
 				default:
 					// Not a B2C request, ignore.
 					return;
-			}	
-			
+			}
+
 			// Verifies token only if the checkbox "Verify tokens" is checked on the settings page
 			$token_checker = new B2C_Token_Checker($_POST[B2C_RESPONSE_MODE], B2C_Settings::$clientID, $policy);
 			if (B2C_Settings::$verify_tokens) {
@@ -137,67 +138,67 @@ function b2c_verify_token() {
 				error_log('Duplicate users found for b2c_object_id ' . $object_id);
 				exit;
 			}
-			
+
 			// Get the userID for the user
 			if ($user == false) { // User doesn't exist yet, create new userID
-				
+
 				$first_name = $token_checker->get_claim('given_name');
 				$last_name = $token_checker->get_claim('family_name');
 
-				$our_userdata = array (
-						'ID' => 0,
-						'user_login' => $email,
-						'user_pass' => NULL,
-						'user_registered' => date('Y-m-d H:i:s'),
-						'user_status' => 0,
-						'user_email' => $email,
-						'display_name' => $first_name . ' ' . $last_name,
-						'first_name' => $first_name,
-						'last_name' => $last_name
-						);
+				$our_userdata = array(
+					'ID' => 0,
+					'user_login' => $email,
+					'user_pass' => NULL,
+					'user_registered' => date('Y-m-d H:i:s'),
+					'user_status' => 0,
+					'user_email' => $email,
+					'display_name' => $first_name . ' ' . $last_name,
+					'first_name' => $first_name,
+					'last_name' => $last_name
+				);
 
-				$userID = wp_insert_user( $our_userdata );
+				$userID = wp_insert_user($our_userdata);
 				update_user_meta($userID, 'b2c_object_id', sanitize_text_field($object_id));
 				do_action('b2c_new_userdata', $userID, $token_checker->get_payload());
 			} else if ($policy == B2C_Settings::$edit_profile_policy) { // Update the existing user w/ new attritubtes
-				
+
 				$name = $token_checker->get_claim('name');
 				$first_name = $token_checker->get_claim('given_name');
 				$last_name = $token_checker->get_claim('family_name');
-				
-				$our_userdata = array (
-										'ID' => $user->ID,
-										'display_name' => $first_name . ' ' . $last_name,
-										'first_name' => $first_name,
-										'last_name' => $last_name
-										);
-													
-				$userID = wp_update_user( $our_userdata );
+
+				$our_userdata = array(
+					'ID' => $user->ID,
+					'display_name' => $first_name . ' ' . $last_name,
+					'first_name' => $first_name,
+					'last_name' => $last_name
+				);
+
+				$userID = wp_update_user($our_userdata);
 				update_user_meta($userID, 'b2c_object_id', sanitize_text_field($object_id));
 				do_action('b2c_update_userdata', $userID, $token_checker->get_payload());
 			} else {
 				$userID = $user->ID;
 			}
-			
+
 			// Check if the user is an admin and needs MFA
-			$wp_user = new WP_User($userID); 
+			$wp_user = new WP_User($userID);
 			if (in_array('administrator', $wp_user->roles)) {
-					
+
 				// If user did not authenticate with admin_policy, redirect to admin policy
 				if (mb_strtolower($token_checker->get_claim('tfp')) != mb_strtolower(B2C_Settings::$admin_policy)) {
 					$b2c_endpoint_handler = new B2C_Endpoint_Handler(B2C_Settings::$admin_policy);
-					$authorization_endpoint = $b2c_endpoint_handler->get_authorization_endpoint().'&state=admin';
+					$authorization_endpoint = $b2c_endpoint_handler->get_authorization_endpoint() . '&state=admin';
 					wp_redirect($authorization_endpoint);
 					exit;
 				}
 			}
-			
+
 			// Set cookies to authenticate on WP side
 			wp_set_auth_cookie($userID);
 
 			// Add a hook for redirect after login
 			do_action('b2c_post_login');
-				
+
 			// Redirect to home page
 			wp_safe_redirect(site_url() . '/');
 			exit;
@@ -211,21 +212,21 @@ function b2c_verify_token() {
 /** 
  * Redirects to B2C's edit profile policy when user edits their profile.
  */
-function b2c_edit_profile() {
-	
+function b2c_edit_profile()
+{
+
 	// Check to see if user was requesting the edit_profile page, if so redirect to B2C
 	$pagename = $_SERVER['REQUEST_URI'];
 	$parts = explode('/', $pagename);
 	$len = count($parts);
-	if ($len > 1 && $parts[$len-2] == "wp-admin" && $parts[$len-1] == "profile.php") {
-		
+	if ($len > 1 && $parts[$len - 2] == "wp-admin" && $parts[$len - 1] == "profile.php") {
+
 		// Return URL for edit_profile endpoint
 		try {
 			$b2c_endpoint_handler = new B2C_Endpoint_Handler(B2C_Settings::$edit_profile_policy);
-			$authorization_endpoint = $b2c_endpoint_handler->get_authorization_endpoint().'&state=edit_profile';
+			$authorization_endpoint = $b2c_endpoint_handler->get_authorization_endpoint() . '&state=edit_profile';
 			wp_redirect($authorization_endpoint);
-		}
-		catch (Exception $e) {
+		} catch (Exception $e) {
 			echo $e->getMessage();
 		}
 		exit;
@@ -235,13 +236,13 @@ function b2c_edit_profile() {
 /**
  * Redirects to B2C on a password reset request.
  */
-function b2c_password_reset() {
+function b2c_password_reset()
+{
 	try {
 		$b2c_endpoint_handler = new B2C_Endpoint_Handler(B2C_Settings::$password_reset_policy);
-		$authorization_endpoint = $b2c_endpoint_handler->get_authorization_endpoint().'&state=password_reset';
+		$authorization_endpoint = $b2c_endpoint_handler->get_authorization_endpoint() . '&state=password_reset';
 		wp_redirect($authorization_endpoint);
-	}
-	catch (Exception $e) {
+	} catch (Exception $e) {
 		echo $e->getMessage();
 	}
 	exit;
