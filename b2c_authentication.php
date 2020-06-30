@@ -194,6 +194,9 @@ function b2c_verify_token() {
 			
 			// Set cookies to authenticate on WP side
 			wp_set_auth_cookie($userID);
+
+			// Add a hook for redirect after login
+			do_action('b2c_post_login');
 				
 			// Redirect to home page
 			wp_safe_redirect(site_url() . '/');
