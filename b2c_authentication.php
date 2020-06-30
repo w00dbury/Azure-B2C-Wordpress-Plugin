@@ -136,7 +136,7 @@ function b2c_verify_token() {
 						'ID' => 0,
 						'user_login' => $email,
 						'user_pass' => NULL,
-						'user_registered' => true,
+						'user_registered' => date('Y-m-d H:i:s'),
 						'user_status' => 0,
 						'user_email' => $email,
 						'display_name' => $first_name . ' ' . $last_name,
