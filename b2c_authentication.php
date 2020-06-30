@@ -158,6 +158,7 @@ function b2c_verify_token() {
 
 				$userID = wp_insert_user( $our_userdata );
 				update_user_meta($userID, 'b2c_object_id', sanitize_text_field($object_id));
+				do_action('b2c_new_userdata', $userID, $token_checker->get_payload());
 			} else if ($policy == B2C_Settings::$edit_profile_policy) { // Update the existing user w/ new attritubtes
 				
 				$name = $token_checker->get_claim('name');
@@ -173,6 +174,7 @@ function b2c_verify_token() {
 													
 				$userID = wp_update_user( $our_userdata );
 				update_user_meta($userID, 'b2c_object_id', sanitize_text_field($object_id));
+				do_action('b2c_update_userdata', $userID, $token_checker->get_payload());
 			} else {
 				$userID = $user->ID;
 			}
