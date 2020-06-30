@@ -1,7 +1,7 @@
-## active-directory-b2c-wordpress-plugin-openidconnect
-This repo contains the code for a WordPress plugin that allows users to authenticate with Azure AD B2C using OpenID Connect. Admins have the ability to configure several B2C policies: general sign-in/sign-up without multifactor authetication, admin sign-in/sign-up with multifactor authentication (optional), and profile editing. 
+## Azure-B2C-Wordpress-Plugin
+This repo contains the code for a WordPress plugin that allows users to authenticate with Azure AD B2C using OpenID Connect. Admins have the ability to configure several B2C policies: general sign-in/sign-up without multifactor authetication, admin sign-in/sign-up with multifactor authentication (optional), and profile editing.
 
-A live version of a WordPress site with this plugin installed is available here: https://olenasblog.azurewebsites.net/ 
+This is based on the [plugin](https://github.com/AzureAD/active-directory-b2c-wordpress-plugin-openidconnect) from Microsoft. That project seems to have gone stale so several improvements have been merged into this repository.
 
 ## Pre-requisites
 + Install WordPress ([download link](https://codex.wordpress.org/Installing_WordPress))
