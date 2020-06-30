@@ -18,12 +18,12 @@ function autoload($class) {
 	if ( file_exists( $plugin_directory.$class_filename ) ) {
 		require_once $class_filename;
 	}
+
 	
+	require_once 'b2c-user-settings.php';	
 }
 
 /**
  * Registers the autoloader.
  */
 spl_autoload_register('autoload');
-
-?>
